@@ -1,8 +1,12 @@
 import { join } from 'path'
-import { createBot, createProvider, createFlow, addKeyword, utils } from '@builderbot/bot'
+import { createBot, createFlow, addKeyword, utils } from '@builderbot/bot'
 import { MongoAdapter as Database } from '@builderbot/database-mongo'
 import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
+import { adapterProvider } from './provider'
 import dotenv from 'dotenv'
+import { adapterDB } from './database'
+import { bienvenidaFlow } from './flow/bienvenida.flow'
+import { menuFlow } from './flow/menu.flow'
 const result = dotenv.config()
 
 const PORT = process.env.PORT ?? 3008
@@ -21,7 +25,7 @@ const discordFlow = addKeyword<Provider, Database>('doc').addAnswer(
     }
 )
 
-const welcomeFlow = addKeyword<Provider, Database>(['hi', 'hello', 'hola'])
+/* const welcomeFlow = addKeyword<Provider, Database>(['hi', 'hello', 'hola'])
     .addAnswer(`🙌 Hello welcome to this *Chatbot*`)
     .addAnswer(
         [
@@ -36,7 +40,7 @@ const welcomeFlow = addKeyword<Provider, Database>(['hi', 'hello', 'hola'])
             return
         },
         [discordFlow]
-    )
+    ) */
 
 const registerFlow = addKeyword<Provider, Database>(utils.setEvent('REGISTER_FLOW'))
     .addAnswer(`What is your name?`, { capture: true }, async (ctx, { state }) => {
@@ -61,13 +65,7 @@ const fullSamplesFlow = addKeyword<Provider, Database>(['samples', utils.setEven
     })
 
 const main = async () => {
-    const adapterFlow = createFlow([welcomeFlow, registerFlow, fullSamplesFlow])
-    
-    const adapterProvider = createProvider(Provider)
-        const adapterDB = new Database({
-        dbUri: process.env.MONGO_DB_URI,
-        dbName: process.env.MONGO_DB_NAME,
-    })
+    const adapterFlow = createFlow([bienvenidaFlow, registerFlow, fullSamplesFlow, menuFlow])
 
     const { handleCtx, httpServer } = await createBot({
         flow: adapterFlow,
