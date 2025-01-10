@@ -4,7 +4,6 @@ import { BaileysProvider as Provider } from "@builderbot/provider-baileys";
 import { MongoAdapter as Database } from "@builderbot/database-mongo";
 import { endFlow } from "./end.flow";
 
-// Definimos el menú como un objeto para facilitar el acceso a los nombres
 const MENU_ITEMS = {
     '1': { name: 'Empanada de Carne', price: 150 },
     '2': { name: 'Empanada de Jamón y Queso', price: 160 },
@@ -18,63 +17,85 @@ const MENU_ITEMS = {
 
 export const menuFlow = addKeyword<Provider, Database>(utils.setEvent('MENU_FLOW'))
 .addAnswer([
-    '🥟 *Menú de Empanadas y Bebidas* 🥟\n\n' +
-    '*Empanadas (unidad):*\n' +
-    '1. 🥩 Empanada de Carne - $150\n' +
-    '2. 🧀 Empanada de Jamón y Queso - $160\n' +
-    '3. 🥔 Empanada de Humita - $140\n' +
-    '4. 🌱 Empanada de Verdura - $140\n' +
-    '5. 🍗 Empanada de Pollo - $150\n\n' +
-    '*Bebidas:*\n' +
-    '6. 🥤 Gaseosa 500ml - $250\n' +
-    '7. ☕ Café - $200\n' +
-    '8. 🍺 Cerveza Artesanal 500ml - $400\n\n' +
-    'Selecciona una opcion:'
-], {capture: true}, async (ctx, { state }) => {
-    const selection = ctx.body;
-    if (MENU_ITEMS[selection]) {
-        // Solo actualizamos la selección actual
-        await state.update({ currentSelection: selection });
+    '🌟 *Menú Principal* 🌟\n\n' +
+    '¡Selecciona lo que deseas pedir respondiendo con el número y cantidad!\n' +
+    'Por ejemplo: Si deseas 3 Empanadas de Carne, responde con *1 3*.\n\n' +
+    '🍽️ *Empanadas (unidad):*\n' +
+    '1️⃣ 🥩 *Empanada de Carne* - $150\n' +
+    '2️⃣ 🧀 *Empanada de Jamón y Queso* - $160\n' +
+    '3️⃣ 🥔 *Empanada de Humita* - $140\n' +
+    '4️⃣ 🌱 *Empanada de Verdura* - $140\n' +
+    '5️⃣ 🍗 *Empanada de Pollo* - $150\n\n' +
+    '🥤 *Bebidas:*\n' +
+    '6️⃣ 🥤 *Gaseosa 500ml* - $250\n' +
+    '7️⃣ ☕ *Café* - $200\n' +
+    '8️⃣ 🍺 *Cerveza Artesanal 500ml* - $400\n\n' +
+    '💡 *Instrucciones:*\n' +
+    '- Responde con el número del producto seguido de la cantidad\n' +
+    '- Ejemplo: "1 12" para pedir 12 empanadas de carne\n'
+], {capture: true}, async (ctx, { state, flowDynamic, fallBack }) => {
+    // Validación del formato de entrada
+    const input = ctx.body.trim();
+    const inputParts = input.split(' ');
+    
+    if (inputParts.length !== 2) {
+        return fallBack('❌ Formato inválido. Por favor, ingresa el número del producto seguido de la cantidad (ejemplo: "1 3")');
     }
-}).addAction(async (_, { flowDynamic, state }) => {
-    const currentSelection = state.get('currentSelection');
-    const itemName = MENU_ITEMS[currentSelection]?.name;
-    await flowDynamic(`Tu selección es: ${itemName}`);
-}).addAnswer('Ingresa la cantidad (un numero)', {capture: true}, async (ctx, { state }) => {
-    const quantity = parseInt(ctx.body);
-    if (!isNaN(quantity)) {
-        const currentSelection = state.get('currentSelection');
-        const newOrder = {
-            item: MENU_ITEMS[currentSelection].name,
-            quantity: quantity,
-            price: MENU_ITEMS[currentSelection].price
-        };
-        
-        // Obtenemos el array actual de orders y si no existe lo inicializamos
-        let currentOrders = state.get('orders');
-        if (!currentOrders) {
-            currentOrders = [];
-        }
-        
-        // Agregamos el nuevo pedido
-        currentOrders.push(newOrder);
-        
-        // Actualizamos el estado con el array modificado
-        await state.update({ 
-            orders: currentOrders,
-            currentQuantity: quantity 
-        });
+
+    const [selection, quantityStr] = inputParts;
+    const quantity = parseInt(quantityStr);
+
+    // Validación del número de producto
+    if (!MENU_ITEMS[selection]) {
+        return fallBack('❌ Producto no válido. Por favor, selecciona un número del 1 al 8');
     }
+
+    // Validación de la cantidad
+    if (isNaN(quantity) || quantity <= 0 || quantity > 100) {
+        return fallBack('❌ Cantidad inválida. Por favor, ingresa un número entre 1 y 50');
+    }
+
+    // Obtenemos el array actual de orders y si no existe lo inicializamos
+    let currentOrders = state.get('orders');
+    if (!currentOrders) {
+        currentOrders = [];
+    }
+    
+    const newOrder = {
+        item: MENU_ITEMS[selection].name,
+        quantity: quantity,
+        price: MENU_ITEMS[selection].price
+    };
+    
+    // Agregamos el nuevo pedido
+    currentOrders.push(newOrder);
+    
+    // Actualizamos el estado
+    await state.update({ orders: currentOrders });
+    
 }).addAction(async (_, { flowDynamic, state }) => {
-    const quantity = state.get('currentQuantity');
-    await flowDynamic(`La cantidad es: ${quantity}`);
-}).addAnswer(['Deseas seguir pidiendo? Ingresa "Si" o "No"'], {capture: true}, async (ctx, { gotoFlow, state, flowDynamic }) => {
-    if (ctx.body.toLocaleLowerCase().includes('si')) {
+    const orders = state.get('orders') || [];
+    const lastOrder = orders[orders.length - 1];
+    await flowDynamic(`✅ Agregado al pedido: ${lastOrder.item} x ${lastOrder.quantity}`);
+})
+.addAnswer(['¿Deseas seguir pidiendo? Ingresa "Si" o "No"'], {capture: true}, async (ctx, { gotoFlow, state, flowDynamic, fallBack }) => {
+    const response = ctx.body.trim().toLowerCase();
+    
+    // Validación de la respuesta Si/No
+    if (!['si', 'no'].includes(response)) {
+        return fallBack('❌ Por favor, responde solo con "Si" o "No"');
+    }
+
+    if (response === 'si') {
         return gotoFlow(menuFlow);
     } else {
         const orders = state.get('orders') || [];
         
-        // Creamos un resumen del pedido
+        // Validación de que haya al menos un pedido
+        if (orders.length === 0) {
+            return fallBack('❌ No has realizado ningún pedido. Por favor, selecciona al menos un producto.');
+        }
+        
         let orderSummary = '*Resumen de tu pedido:*\n\n';
         let total = 0;
         

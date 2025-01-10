@@ -1,0 +1,49 @@
+{
+  "productos": [
+    {
+      "id": 1,
+      "name": "Empanada de Carne",
+      "price": 800
+    },
+    {
+      "id": 2,
+      "name": "Empanada de Jamón y Queso",
+      "price": 160
+    },
+    {
+      "id": 3,
+      "name": "Empanada de Humita",
+      "price": 140
+    },
+    {
+      "id": 4,
+      "name": "Empanada de Verdura",
+      "price": 140
+    },
+    {
+      "id": 5,
+      "name": "Empanada de Pollo",
+      "price": 150
+    },
+    {
+      "id": 6,
+      "name": "Gaseosa 500ml",
+      "price": 250
+    },
+    {
+      "id": 7,
+      "name": "Café",
+      "price": 200
+    },
+    {
+      "id": 8,
+      "name": "Cerveza Artesanal 500ml",
+      "price": 400
+    },
+    {
+      "id": 9,
+      "name": "Agua Mineral",
+      "price": 1200
+    }
+  ]
+}
