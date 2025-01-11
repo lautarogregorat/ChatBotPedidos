@@ -6,9 +6,9 @@ import { adapterProvider } from './provider'
 import dotenv from 'dotenv'
 import { adapterDB } from './database'
 import { bienvenidaFlow } from './flow/bienvenida.flow'
-import { menuFlow } from './flow/menu.flow'
 import { iniciarSesionFlow } from './flow/iniciarsesion.flow'
-import { agregarProductoFlow, editMenu, eliminarProductoFlow, modificarProductoFlow, verMenuFlow } from './flow/editmenu.flow'
+import { agregarProductoFlow, editMenu, eliminarProductoFlow, modificarProductoFlow, verMenuFlow, verProductosElimibalesFlow, verProductosModificablesFlow } from './flow/editmenu.flow'
+import { menuFlow } from './flow/menu.flow'
 const result = dotenv.config()
 
 const PORT = process.env.PORT ?? 3008
@@ -67,7 +67,7 @@ const fullSamplesFlow = addKeyword<Provider, Database>(['samples', utils.setEven
     })
 
 const main = async () => {
-    const adapterFlow = createFlow([bienvenidaFlow, registerFlow, fullSamplesFlow, menuFlow, iniciarSesionFlow, editMenu, agregarProductoFlow, modificarProductoFlow, eliminarProductoFlow, verMenuFlow])
+    const adapterFlow = createFlow([bienvenidaFlow, registerFlow, fullSamplesFlow, menuFlow, iniciarSesionFlow, editMenu, agregarProductoFlow, modificarProductoFlow, eliminarProductoFlow, verMenuFlow, verProductosModificablesFlow, verProductosElimibalesFlow])
 
     const { handleCtx, httpServer } = await createBot({
         flow: adapterFlow,

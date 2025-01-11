@@ -2,13 +2,13 @@
   "productos": [
     {
       "id": 1,
-      "name": "Empanada de Carne",
-      "price": 800
+      "name": "Empanadas de Carne",
+      "price": 750
     },
     {
       "id": 2,
-      "name": "Empanada de Jamón y Queso",
-      "price": 160
+      "name": "Empanadas de Queso",
+      "price": 700
     },
     {
       "id": 3,
@@ -31,14 +31,9 @@
       "price": 250
     },
     {
-      "id": 7,
-      "name": "Café",
-      "price": 200
-    },
-    {
       "id": 8,
-      "name": "Cerveza Artesanal 500ml",
-      "price": 400
+      "name": "Sprite",
+      "price": 5000
     },
     {
       "id": 9,
