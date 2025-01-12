@@ -13,7 +13,6 @@ const updateMenuText = (productos: any[]) => {
     productos.forEach(producto => {
         menuText += `${producto.id}. ${producto.name} - $${producto.price}\n`;
     });
-    console.log('Menú actualizado:', menuText);
     return menuText;
 };
 
@@ -182,6 +181,7 @@ export const verMenuFlow = addKeyword<Provider, Database>(utils.setEvent('VER_ME
 // Flow principal de edición de menú
 export const editMenu = addKeyword<Provider, Database>(utils.setEvent('ABMC_MENU'))
     .addAction(async (_, { state, flowDynamic }) => {
+        state.clear();
         try {
             // Cargar el menú actual y guardarlo en el estado
             const productos = await MenuService.getAllProducts();

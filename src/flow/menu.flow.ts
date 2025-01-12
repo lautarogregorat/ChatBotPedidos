@@ -3,38 +3,43 @@ import { join } from "path";
 import { BaileysProvider as Provider } from "@builderbot/provider-baileys";
 import { MongoAdapter as Database } from "@builderbot/database-mongo";
 import { endFlow } from "./end.flow";
+import { MenuService } from "./menuService";
 
-const MENU_ITEMS = {
-    '1': { name: 'Empanada de Carne', price: 150 },
-    '2': { name: 'Empanada de Jamón y Queso', price: 160 },
-    '3': { name: 'Empanada de Humita', price: 140 },
-    '4': { name: 'Empanada de Verdura', price: 140 },
-    '5': { name: 'Empanada de Pollo', price: 150 },
-    '6': { name: 'Gaseosa 500ml', price: 250 },
-    '7': { name: 'Café', price: 200 },
-    '8': { name: 'Cerveza Artesanal 500ml', price: 400 }
-};
+export const verMenuInicioFlow = addKeyword<Provider, Database>(utils.setEvent('VER_MENU_INICIO'))
+.addAction(async (_, { flowDynamic, state }) => {
+    state.clear();
+    const product = await MenuService.getAllProducts();
+
+    const mappedMenu = product.reduce((acc, item) => {
+        acc[item.id] = item;
+        return acc;
+    }, {});
+
+    let menuText = `✨ *NUESTRO MENÚ * ✨\n`;
+    // explicar que el precio es por unidad
+    menuText += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    
+    product.forEach(producto => {
+        menuText += `*${producto.id}* - ${producto.name} - $${producto.price}\n`;
+    });
+    
+    menuText += `━━━━━━━━━━━━━━━━━━━━━\n`;
+
+    await state.update({ currentMenu: mappedMenu });
+    console.log('Menu:', menuText);
+    await flowDynamic(menuText);
+}).addAction(async (_, { gotoFlow }) => {
+    return gotoFlow(menuFlow);
+});
 
 export const menuFlow = addKeyword<Provider, Database>(utils.setEvent('MENU_FLOW'))
 .addAnswer([
-    '🌟 *Menú Principal* 🌟\n\n' +
-    '¡Selecciona lo que deseas pedir respondiendo con el número y cantidad!\n' +
-    'Por ejemplo: Si deseas 3 Empanadas de Carne, responde con *1 3*.\n\n' +
-    '🍽️ *Empanadas (unidad):*\n' +
-    '1️⃣ 🥩 *Empanada de Carne* - $150\n' +
-    '2️⃣ 🧀 *Empanada de Jamón y Queso* - $160\n' +
-    '3️⃣ 🥔 *Empanada de Humita* - $140\n' +
-    '4️⃣ 🌱 *Empanada de Verdura* - $140\n' +
-    '5️⃣ 🍗 *Empanada de Pollo* - $150\n\n' +
-    '🥤 *Bebidas:*\n' +
-    '6️⃣ 🥤 *Gaseosa 500ml* - $250\n' +
-    '7️⃣ ☕ *Café* - $200\n' +
-    '8️⃣ 🍺 *Cerveza Artesanal 500ml* - $400\n\n' +
-    '💡 *Instrucciones:*\n' +
-    '- Responde con el número del producto seguido de la cantidad\n' +
-    '- Ejemplo: "1 12" para pedir 12 empanadas de carne\n'
-], {capture: true}, async (ctx, { state, flowDynamic, fallBack }) => {
-    // Validación del formato de entrada
+    '📝 *¿Cómo pedir?*\n' +
+    'Escribe el *número del producto* seguido de la *cantidad*\n' +
+    '*Ejemplo:*\n' +
+    '• Para pedir 3 empanadas del producto 1: escribe *1 3*\n' +
+    '¡Estamos listos para tomar tu pedido! 😊'
+], {capture: true}, async (ctx, { state, fallBack }) => {
     const input = ctx.body.trim();
     const inputParts = input.split(' ');
     
@@ -44,18 +49,18 @@ export const menuFlow = addKeyword<Provider, Database>(utils.setEvent('MENU_FLOW
 
     const [selection, quantityStr] = inputParts;
     const quantity = parseInt(quantityStr);
+    const MENU_ITEMS = state.get('currentMenu');
+    console.log('MENU_ITEMS:', MENU_ITEMS);
+    const selectedProduct = MENU_ITEMS[selection];
 
-    // Validación del número de producto
-    if (!MENU_ITEMS[selection]) {
-        return fallBack('❌ Producto no válido. Por favor, selecciona un número del 1 al 8');
+    if (!selectedProduct) {     
+        return fallBack('❌ Producto no válido. Por favor, selecciona un número valido del menú');
     }
 
-    // Validación de la cantidad
     if (isNaN(quantity) || quantity <= 0 || quantity > 100) {
-        return fallBack('❌ Cantidad inválida. Por favor, ingresa un número entre 1 y 50');
+        return fallBack('❌ Cantidad inválida. Por favor, ingresa un número entre 1 y 100');
     }
 
-    // Obtenemos el array actual de orders y si no existe lo inicializamos
     let currentOrders = state.get('orders');
     if (!currentOrders) {
         currentOrders = [];
@@ -67,21 +72,22 @@ export const menuFlow = addKeyword<Provider, Database>(utils.setEvent('MENU_FLOW
         price: MENU_ITEMS[selection].price
     };
     
-    // Agregamos el nuevo pedido
     currentOrders.push(newOrder);
-    
-    // Actualizamos el estado
     await state.update({ orders: currentOrders });
     
 }).addAction(async (_, { flowDynamic, state }) => {
     const orders = state.get('orders') || [];
     const lastOrder = orders[orders.length - 1];
-    await flowDynamic(`✅ Agregado al pedido: ${lastOrder.item} x ${lastOrder.quantity}`);
+    await flowDynamic(`✅ *¡Excelente elección!*\nAgregado a tu pedido: ${lastOrder.item} x ${lastOrder.quantity}`);
 })
-.addAnswer(['¿Deseas seguir pidiendo? Ingresa "Si" o "No"'], {capture: true}, async (ctx, { gotoFlow, state, flowDynamic, fallBack }) => {
+.addAnswer([
+    '📝 *¿Deseas agregar algo más a tu pedido?*\n' +
+    'Responde:\n' +
+    '• *Si* para seguir pidiendo\n' +
+    '• *No* para ver el resumen de tu pedido'
+], {capture: true}, async (ctx, { gotoFlow, state, flowDynamic, fallBack }) => {
     const response = ctx.body.trim().toLowerCase();
     
-    // Validación de la respuesta Si/No
     if (!['si', 'no'].includes(response)) {
         return fallBack('❌ Por favor, responde solo con "Si" o "No"');
     }
@@ -91,20 +97,22 @@ export const menuFlow = addKeyword<Provider, Database>(utils.setEvent('MENU_FLOW
     } else {
         const orders = state.get('orders') || [];
         
-        // Validación de que haya al menos un pedido
         if (orders.length === 0) {
             return fallBack('❌ No has realizado ningún pedido. Por favor, selecciona al menos un producto.');
         }
         
-        let orderSummary = '*Resumen de tu pedido:*\n\n';
+        let orderSummary = '🧾 *Resumen de tu pedido* 🧾\n\n';
         let total = 0;
         
         orders.forEach((order, index) => {
-            orderSummary += `${index + 1}. ${order.item} x ${order.quantity} = $${order.price * order.quantity}\n`;
+            orderSummary += `${index + 1}. ${order.item}\n`;
+            orderSummary += `   • Cantidad: ${order.quantity}\n`;
+            orderSummary += `   • Subtotal: $${order.price * order.quantity}\n\n`;
             total += order.price * order.quantity;
         });
         
-        orderSummary += `\n*Total a pagar: $${total}*`;
+        orderSummary += `━━━━━━━━━━━━━━━━━━━━━\n`;
+        orderSummary += `*Total a pagar: $${total}*`;
         
         await flowDynamic(orderSummary);
         return gotoFlow(endFlow);

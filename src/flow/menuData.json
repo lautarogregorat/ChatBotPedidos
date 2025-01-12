@@ -2,8 +2,8 @@
   "productos": [
     {
       "id": 1,
-      "name": "Empanadas de Carne",
-      "price": 750
+      "name": "Empanada de Carne",
+      "price": 850
     },
     {
       "id": 2,
@@ -28,7 +28,7 @@
     {
       "id": 6,
       "name": "Gaseosa 500ml",
-      "price": 250
+      "price": 800
     },
     {
       "id": 8,
