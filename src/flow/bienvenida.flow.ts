@@ -10,9 +10,7 @@ const REGEX_BIENVENIDA = '/^(hola|buen(os|as)? (días?|tardes?|noches?|dia,?|dia
 
 export const bienvenidaFlow = addKeyword<Provider, Database>(REGEX_BIENVENIDA, {regex: true})
 .addAnswer([
-    `¡*Bienvenido*!\n` +
-    `Escribe *"Pedir"* para ver nuestro menú especial del día\n` +
-    `¡Te esperamos con las mejores opciones! 😊`
+    `Bienvenido! escribi *"Pedir"* para ver nuestro menú.`
 ],
 {capture: true},
 async (ctx, { gotoFlow }) => {
